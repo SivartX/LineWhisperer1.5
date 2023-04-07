@@ -27,6 +27,7 @@
 #define HARD_LEFT 005 //state//T
 #define HARD_RIGHT 006 //state//H
 #define STATE_STOP 007 //state//S
+
 //****Directions*****//
 #define FORWARD 1
 #define	BACKWARDS 0 
@@ -34,6 +35,7 @@
 #define FAST 90
 #define SLOW 50
 #define STOP 0
+#define TRIM 10
 //******Motor Drive******//
 #define RIGHT_DRIVE 1
 #define LEFT_DRIVE 0
@@ -113,7 +115,7 @@ int main(void)
 
 				case SLOW_FORWARD:
 
-				HBridgeCommand(LEFT_DRIVE,SLOW,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,SLOW + TRIM,FORWARD);
 				HBridgeCommand(RIGHT_DRIVE,SLOW,FORWARD);
 
 				LCDGoToPosition(1,2);
