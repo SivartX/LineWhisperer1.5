@@ -35,7 +35,6 @@
 #define FAST 90
 #define SLOW 50
 #define STOP 0
-#define TRIM 10
 //******Motor Drive******//
 #define RIGHT_DRIVE 1
 #define LEFT_DRIVE 0
@@ -50,6 +49,8 @@ int main(void)
 	char lcd_str_out[20];
 	uint8_t serialInput;
 	char serial_char_array_out[20];
+	uint8_t LTRIM = 0;
+	uint8_t RTRIM = 0;
 	//Enable the LED on the microcontroller board for debugging
 	DDRC |= 1 << PINC2;
 	//Initialize the LCD and send a test message
@@ -81,15 +82,34 @@ int main(void)
 			LCDClearScreen();
 			sprintf(lcd_str_out, "%c",serialInput);
 			LCDSendString(lcd_str_out);
-			LCDGoToPosition(1,1);
-							
+			//LCDGoToPosition(1,1);
+			
+			LCDGoToPosition(14,1);
+			sprintf(lcd_str_out,"%.3d",LTRIM);
+			LCDSendString(lcd_str_out);
+			
+			LCDGoToPosition(14,2);
+			sprintf(lcd_str_out,"%.3d",RTRIM);
+			LCDSendString(lcd_str_out);
+			
+			//Trims the motor speed to allow the robot to move straight
+			if(isdigit(serialInput)){
+				
+				if(serialInput == '1' && -1 + LTRIM >= 0) --LTRIM;
+				else if(serialInput == '2') ++LTRIM;
+				if(serialInput == '3' && -1 + RTRIM >= 0) --RTRIM;
+				else if(serialInput == '4') ++RTRIM;
+				
+				serialInput = 'S';
+			}
+								
 			switch(state)
 			{
 
 				case FAST_FORWARD:
 
-				HBridgeCommand(LEFT_DRIVE,FAST,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,FAST,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);
+				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);
 
 				LCDGoToPosition(1,2);
 				sprintf(lcd_str_out,"FAST_FORWARD");
@@ -115,8 +135,8 @@ int main(void)
 
 				case SLOW_FORWARD:
 
-				HBridgeCommand(LEFT_DRIVE,SLOW + TRIM,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,SLOW,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,SLOW+LTRIM,FORWARD);
+				HBridgeCommand(RIGHT_DRIVE,SLOW+RTRIM,FORWARD);
 
 				LCDGoToPosition(1,2);
 				sprintf(lcd_str_out,"SLOW_FORWARD");
@@ -142,8 +162,8 @@ int main(void)
 
 				case SOFT_LEFT:
 
-				HBridgeCommand(LEFT_DRIVE,FAST,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,SLOW,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);
+				HBridgeCommand(RIGHT_DRIVE,SLOW+RTRIM,FORWARD);
 
 				LCDGoToPosition(1,2);
 				sprintf(lcd_str_out,"SOFT_LEFT");
@@ -175,8 +195,8 @@ int main(void)
 
 				case SOFT_RIGHT:
 
-				HBridgeCommand(LEFT_DRIVE,SLOW,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,FAST,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,SLOW+LTRIM,FORWARD);
+				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);
 
 				LCDGoToPosition(1,2);
 				sprintf(lcd_str_out,"SOFT_RIGHT");
@@ -208,7 +228,7 @@ int main(void)
 
 				case HARD_LEFT:
 
-				HBridgeCommand(LEFT_DRIVE,FAST,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);
 				HBridgeCommand(RIGHT_DRIVE,STOP,FORWARD);
 
 				LCDGoToPosition(1,2);
@@ -242,7 +262,7 @@ int main(void)
 				case HARD_RIGHT:
 
 				HBridgeCommand(LEFT_DRIVE,STOP,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,FAST,FORWARD);
+				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);
 
 				LCDGoToPosition(1,2);
 				sprintf(lcd_str_out,"HARD_RIGHT");
