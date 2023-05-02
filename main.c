@@ -28,13 +28,15 @@
 #define HARD_RIGHT 006 //state//H
 #define STATE_STOP 007 //state//S
 
-//****Directions*****//
+//**** Motor Directions*****//
 #define FORWARD 1
 #define	BACKWARDS 0 
 //****Speed Values*****//
 #define FAST 90
-#define SLOW 50
+#define SLOW 40
+#define SOFT_TURN 10
 #define STOP 0
+#define HARD_TURN 5
 //******Motor Drive******//
 #define RIGHT_DRIVE 1
 #define LEFT_DRIVE 0
@@ -68,39 +70,38 @@ int main(void)
 	uint8_t state = STATE_STOP;	
 	/*==================End Initialization==================*/
 	
-
-
 	while(1)
 	{	
 		
+		//function called serialCheckRxComplete(). The purpose of this function is likely to check whether there is any available data to be read from the serial port. 
+		//The != 0 comparison checks whether the function returns a value other than 0, which determinds that there is data available. Acts as an Interrupt.
 			if(serialCheckRxComplete() != 0)
 			{
-				serialInput = USART_vReceiveByte();
-				serialClearBuffer();
+				serialInput = USART_vReceiveByte(); //input from  the higher level of CS. F- FAST_FORWARD, W-SLOW_FORWARD,L-SOFT_LEFT, R-SOFT_RIGHT, T-HARD_LEFT, H- HARD_RIGHT, S-STATE_STOP
+				// 1- subtract 1 LEFT TRIM, 2- add 1 LEFT Trim, 3- subtract 1 RIGHT TRIM, 4- add 1 RIGHT Trim,
 			}
 			
 			LCDClearScreen();
-			sprintf(lcd_str_out, "%c",serialInput);
+			sprintf(lcd_str_out, "%c",serialInput); // Displays the serial data received
 			LCDSendString(lcd_str_out);
-			//LCDGoToPosition(1,1);
 			
 			LCDGoToPosition(14,1);
-			sprintf(lcd_str_out,"%.3d",LTRIM);
+			sprintf(lcd_str_out,"%.3d",LTRIM);// Displays the left drive trim
 			LCDSendString(lcd_str_out);
 			
 			LCDGoToPosition(14,2);
-			sprintf(lcd_str_out,"%.3d",RTRIM);
+			sprintf(lcd_str_out,"%.3d",RTRIM);// Displays the right drive trim
 			LCDSendString(lcd_str_out);
 			
 			//Trims the motor speed to allow the robot to move straight
 			if(isdigit(serialInput)){
 				
-				if(serialInput == '1' && -1 + LTRIM >= 0) --LTRIM;
-				else if(serialInput == '2') ++LTRIM;
-				if(serialInput == '3' && -1 + RTRIM >= 0) --RTRIM;
-				else if(serialInput == '4') ++RTRIM;
+				if(serialInput == '1' && -1 + LTRIM >= 0) --LTRIM; // subtracts 1 from the left drive, will not go below zero
+				else if(serialInput == '2') ++LTRIM;// add 1 from the left drive
+				if(serialInput == '3' && -1 + RTRIM >= 0) --RTRIM; // subtracts 1 from the right drive, will not go below zero
+				else if(serialInput == '4') ++RTRIM;// add 1 from the right drive
 				
-				serialInput = 'S';
+				serialInput = 'S'; //will stop the robot to give time to adjust trim
 			}
 								
 			switch(state)
@@ -108,12 +109,14 @@ int main(void)
 
 				case FAST_FORWARD:
 
-				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD); //motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2); // Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"FAST_FORWARD");
 				LCDSendString(lcd_str_out);
+				
+				// Allowed state transfer below:
 
 				if(serialInput == 'F') {
 					state = FAST_FORWARD;
@@ -135,12 +138,14 @@ int main(void)
 
 				case SLOW_FORWARD:
 
-				HBridgeCommand(LEFT_DRIVE,SLOW+LTRIM,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,SLOW+RTRIM,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,SLOW+LTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,SLOW+RTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2);// Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"SLOW_FORWARD");
 				LCDSendString(lcd_str_out);
+				
+				// Allowed state transfer below:
 
 				if(serialInput == 'F'){
 					state = FAST_FORWARD;
@@ -162,12 +167,14 @@ int main(void)
 
 				case SOFT_LEFT:
 
-				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,SLOW+RTRIM,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,SOFT_TURN+RTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2);// Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"SOFT_LEFT");
 				LCDSendString(lcd_str_out);
+				
+				// Allowed state transfer below:
 
 				if(serialInput == 'F'){
 					state = FAST_FORWARD;
@@ -195,12 +202,14 @@ int main(void)
 
 				case SOFT_RIGHT:
 
-				HBridgeCommand(LEFT_DRIVE,SLOW+LTRIM,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);
+				HBridgeCommand(LEFT_DRIVE, SOFT_TURN+LTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2);// Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"SOFT_RIGHT");
 				LCDSendString(lcd_str_out);
+				
+				// Allowed state transfer below:v
 
 				if(serialInput == 'F'){
 					state = FAST_FORWARD;
@@ -208,14 +217,8 @@ int main(void)
 				else if(serialInput == 'W'){
 					state = SLOW_FORWARD;
 				}
-				else if(serialInput == 'L'){
-					state = SOFT_LEFT;
-				}
 				else if(serialInput == 'R'){
 					state = SOFT_RIGHT;
-				}
-				else if(serialInput == 'T'){
-					state = HARD_LEFT;
 				}
 				else if(serialInput == 'H'){
 					state = HARD_RIGHT;
@@ -228,12 +231,14 @@ int main(void)
 
 				case HARD_LEFT:
 
-				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,STOP,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,FAST+LTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,HARD_TURN,BACKWARDS);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2);// Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"HARD_LEFT");
 				LCDSendString(lcd_str_out);
+				
+				// Allowed state transfer below:
 
 				if(serialInput == 'F'){
 					state = FAST_FORWARD;
@@ -244,14 +249,8 @@ int main(void)
 				else if(serialInput == 'L'){
 					state = SOFT_LEFT;
 				}
-				else if(serialInput == 'R'){
-					state = SOFT_RIGHT;
-				}
 				else if(serialInput == 'T'){
 					state = HARD_LEFT;
-				}
-				else if(serialInput == 'H'){
-					state = HARD_RIGHT;
 				}
 				else if (serialInput == 'S'){
 					state = STATE_STOP;
@@ -261,12 +260,14 @@ int main(void)
 
 				case HARD_RIGHT:
 
-				HBridgeCommand(LEFT_DRIVE,STOP,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,HARD_TURN,BACKWARDS);//motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,FAST+RTRIM,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2);// Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"HARD_RIGHT");
 				LCDSendString(lcd_str_out);
+				
+				// Allowed state transfer below:
 
 				if(serialInput == 'F'){
 					state = FAST_FORWARD;
@@ -274,14 +275,8 @@ int main(void)
 				else if(serialInput == 'W'){
 					state = SLOW_FORWARD;
 				}
-				else if(serialInput == 'L'){
-					state = SOFT_LEFT;
-				}
 				else if(serialInput == 'R'){
 					state = SOFT_RIGHT;
-				}
-				else if(serialInput == 'T'){
-					state = HARD_LEFT;
 				}
 				else if(serialInput == 'H'){
 					state = HARD_RIGHT;
@@ -294,12 +289,14 @@ int main(void)
 
 				case STATE_STOP:
 
-				HBridgeCommand(LEFT_DRIVE,STOP,FORWARD);
-				HBridgeCommand(RIGHT_DRIVE,STOP,FORWARD);
+				HBridgeCommand(LEFT_DRIVE,STOP,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
+				HBridgeCommand(RIGHT_DRIVE,STOP,FORWARD);//motor command to the H-bridge, (The motor effected, speed, direction)
 
-				LCDGoToPosition(1,2);
+				LCDGoToPosition(1,2);// Displays the current state on the second line of the LCD
 				sprintf(lcd_str_out,"STATE_STOP");
 				LCDSendString(lcd_str_out);
+
+				// Allowed state transfer below:
 
 				if(serialInput == 'W'){
 					state = SLOW_FORWARD;
@@ -317,7 +314,8 @@ int main(void)
 				break;
 			
 				}
-	
+				
+	//This code is printing an array of characters through a UART communication interface.
 		for(uint8_t ii =0; ii<20; ii++){
 			uart_putchar(serial_char_array_out[ii],&mystdout);
 		}
